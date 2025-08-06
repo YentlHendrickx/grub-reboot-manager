@@ -1,4 +1,4 @@
-# GRUB Reboot Utility
+# GRUB Reboot Manager
 
 This is a simple Bash script that allows you to easily select and reboot into a specific GRUB menu entry. It's especially useful for multi-boot systems where you frequently switch between operating systems.
 
