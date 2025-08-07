@@ -27,24 +27,31 @@ while true; do
     read -ep "Enter the menu entry number: " entry_number
 
     if [[ "$entry_number" =~ ^[0-9]+$ ]]; then
-			# Check if the entry number is valid
-			total_entries=$(grep -c 'menuentry ' /boot/grub/grub.cfg)
+        total_entries=$(grep -c 'menuentry ' /boot/grub/grub.cfg)
+        if (( entry_number < 1 || entry_number > total_entries )); then
+            echo -e "${ERR}Invalid entry number. Please enter a number between 1 and $total_entries.${CLR}"
+            continue
+        fi
 
-			if [ "$entry_number" -ge 1 ] && [ "$entry_number" -le "$total_entries" ]; then
-				selected_entry=$(awk -F"'" '/menuentry / {gsub(/^[ \t]+|[ \t]+$/,"",$2); print $2}' /boot/grub/grub.cfg | sed -n "${entry_number}p")
-				break
-			else
-				echo -e "${ERR}Invalid entry number. Please try again.${CLR}"
-			fi
+        # Check if the entry number is valid
+        selected_entry_raw=$(awk -F"'" '/menuentry / {gsub(/^[ \t]+|[ \t]+$/,"",$2); print $2}' /boot/grub/grub.cfg | sed -n "${entry_number}p")
+
+        if [[ -n "$selected_entry_raw" ]]; then
+            # The entry name might need escaping for grub-reboot
+            selected_entry_final=$(echo "$selected_entry_raw" | sed 's/[>&]/\\&/g')
+            break
+        else
+            echo -e "${ERR}Invalid entry number. Please try again.${CLR}"
+        fi
     else
-			echo -e "${ERR}Please enter a valid number.${CLR}"
+        echo -e "${ERR}Please enter a valid number.${CLR}"
     fi
 done
 
-echo -e "\n${OK}Setting GRUB to boot into entry number $entry_number: $selected_entry ${CLR}"
-grub-reboot "$entry_number"
+echo -e "\n${OK}Setting GRUB to boot into entry: \"$selected_entry_final\"${CLR}"
+grub-reboot "$selected_entry_final"
 if [ $? -ne 0 ]; then
-    echo -e "${ERR}Failed to set GRUB to boot into entry number $entry_number.${CLR}"
+    echo -e "${ERR}Failed to set GRUB to boot into entry: \"$selected_entry_final\"${CLR}"
     exit 1
 fi
 
